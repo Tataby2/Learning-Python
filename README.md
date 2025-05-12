@@ -16,7 +16,7 @@ Learning-Python/
 
 ---
 
-## 📝 Notes: Kalp's Track
+## 📝 Notes: Kelp's Track
 
 All notebooks in the `notes/` directory are numbered and build sequentially. These are my personal notes — structured, annotated, and aimed at long-term understanding.
 
@@ -86,4 +86,4 @@ python task-cli.py list
 
 We didn’t just want to "learn Python" — we wanted to understand it. Really understand it. This repo is our proof-of-work: curious, critical, and constantly evolving.
 
-> This is **Kalp’s side** of the journey — the experiments, the notes, and the occasional detour 🌱
+> This is **Kelp’s side** of the journey — the experiments, the notes, and the occasional detour 🌱
