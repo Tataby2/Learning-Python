@@ -1,14 +1,20 @@
 from enum import Enum
 import json, time
 import os
+from datetime import datetime
 
-# Got help from GPT for this one
+# Define the path to the tasks JSON file
 TASKS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tasks.json")
 
-
+# Enum to represent task status
+class Status(Enum):
+    TODO = 0
+    IN_PROGRESS = 1
+    DONE = 2
 
 #region Task IO methods
 
+# Load all tasks from the JSON file
 def load_tasks(tasks_fp: str = TASKS_PATH) -> dict:
     try:
         with open(tasks_fp, 'r') as file:
@@ -17,102 +23,77 @@ def load_tasks(tasks_fp: str = TASKS_PATH) -> dict:
                 raise ValueError("JSON root is not a dict")
             return data
     except (FileNotFoundError, json.JSONDecodeError):
-        return {}  # Start fresh if file doesn't exist
+        return {}
 
+# Load a single task by ID
 def load_task(id: int, tasks_fp: str = TASKS_PATH):
     try:
         with open(tasks_fp, 'r') as file:
             data = json.load(file)
             if not isinstance(data, dict):
                 raise ValueError("JSON root is not a dict")
-            # Convert the id to a string and find a match
             task = data.get(str(id))
             if not task:
                 print(f"Task with id: {id} does not exist")
                 return
             return task
     except (FileNotFoundError, json.JSONDecodeError):
-        data = {}  # Start fresh if file doesn't exist
+        return {}
 
+# Save all tasks to the JSON file
 def save_tasks(tasks: dict, tasks_fp: str = TASKS_PATH) -> None:
     with open(tasks_fp, 'w') as file:
         json.dump(tasks, file, indent=4)
 
 #endregion
 
+# Format a timestamp to human-readable format
+def format_time(ts: float) -> str:
+    return datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M:%S")
+
+# Parse user input into a list of command components
 def process_line(line: str):
-    
     if line.startswith("add"):
         cmd = "add"
-        rest = line[4:].strip() # "hello world"
+        rest = line[4:].strip()
         if rest.startswith('"') and rest.endswith('"'):
-            desc = rest[1:-1] # hello world
+            desc = rest[1:-1]
             return [cmd, desc]
 
     elif line.startswith("update "):
         cmd = "update"
-        
-        id_and_desc = line[6:]
-        id_and_desc = id_and_desc.strip()
+        id_and_desc = line[6:].strip()
         first_space = id_and_desc.find(" ")
         task_id = id_and_desc[0:first_space]
-
         try:
             _ = int(task_id)
         except:
             print(f"Id: {task_id} is invalid. How did this happen...")
-
         desc_part = id_and_desc[first_space:].strip()
         if desc_part.startswith('"') and desc_part.endswith('"'):
             desc = desc_part[1:-1]
-            return [cmd, task_id, desc] 
+            return [cmd, task_id, desc]
 
-        # # Find the first space after "update "
-        # first_space = line.find(" ", 7)
-        # # DEAL WITH MALFORMATTED USER INPUT
-        # if first_space == -1:
-        #     return [cmd]  # incomplete input
-        # task_id = line[7:first_space].strip()
-        # desc_part = line[first_space:].strip()
-        # if desc_part.startswith('"') and desc_part.endswith('"'):
-        #     desc = desc_part[1:-1]
-        #     return [cmd, task_id, desc]
-
-    # fallback: naive split
     return line.split()
 
-def add_task(description: str) -> None:    
-
-    # Load in the dictionary of all tasks
+# Add a new task with the given description
+def add_task(description: str) -> None:
     tasks = load_tasks()
-
-    # Create the values associated with the task (which themselves will be a dictionary)
-    # i.e. a dictionary within a dictionary
     current_time = time.time()
     task = {
         "desc": description.strip("\""),
-        "status": 0, # 0 meaning todo
+        "status": Status.TODO.value,
         "createdAt": current_time,
         "updatedAt": current_time,
     }
-
-    # What is the next unique id? Well its one greater than the current highest
-    # unique id to be safe!
     next_unique_id = max(map(int, tasks.keys()), default=0) + 1
-
-    # Add the task to the dictionary of tasks with the next
-    # available unique id.
-    tasks.update({next_unique_id : task})
-
-    # Dump the changed information back into the json (save)
+    tasks.update({next_unique_id: task})
     save_tasks(tasks)
 
+# Update the description of an existing task
 def update_task(id: int, new_description: str) -> None:
-    
-    # Load in the dictionary of all tasks
     tasks = load_tasks()
     id = str(id)
-    # Only update the updatedAt parameter of the value of our task (if it exists)
     if id in tasks:
         tasks[id].update({
             "desc": new_description,
@@ -122,92 +103,82 @@ def update_task(id: int, new_description: str) -> None:
     else:
         print(f"No task found with ID: {id}")
 
+# Delete a task by ID
 def delete_task(id: int) -> None:
-    
-    # Load in the dictionary of all tasks
     tasks = load_tasks()
-    # Convert id to string
     id = str(id)
-
-    # If the tasks have the id, then only can we delete something
     if id in tasks:
         del tasks[id]
         save_tasks(tasks)
     else:
         print(f"No task found with ID: {id}")
 
+# Mark a task as in progress
 def mark_in_progress(id: int) -> None:
-
-    # # Gives me the details for the task (dictionary)
-    # task = load_task()
-
-    # # Mark the status property in the dictionary as being 1 (in progress)
-    # task["status"] = "1"
-
-    # # Load in all the tasks, and then set the values for our task to be the updated values (changed status)
-    # tasks = load_tasks
-    # tasks[str(id)] = task
-
-    # save_tasks(tasks)
-
     tasks = load_tasks()
-    tasks[str(id)]["status"] = 1
-    save_tasks(tasks)
+    id = str(id)
+    if id in tasks:
+        tasks[id]["status"] = Status.IN_PROGRESS.value
+        tasks[id]["updatedAt"] = time.time()
+        save_tasks(tasks)
+    else:
+        print(f"No task found with ID: {id}")
 
-    pass
-
+# Mark a task as done
 def mark_done(id: int) -> None:
-
     tasks = load_tasks()
-    tasks[str(id)]["status"] = 2
-    save_tasks(tasks)
+    id = str(id)
+    if id in tasks:
+        tasks[id]["status"] = Status.DONE.value
+        tasks[id]["updatedAt"] = time.time()
+        save_tasks(tasks)
+    else:
+        print(f"No task found with ID: {id}")
 
-    pass
-
+# List tasks, optionally filtered by status
 def list_tasks(type: int = None) -> None:
-
-    # List all the tasks by iterating through the dictionary object, and filter
-    # based on the type
-
     tasks = load_tasks()
-
     if type == "done":
-        type = 2
+        type = Status.DONE.value
     elif type == "todo":
-        type = 0
+        type = Status.TODO.value
     elif type == "in-progress":
-        type = 1
-    elif type != None:
+        type = Status.IN_PROGRESS.value
+    elif type is not None:
         print(f"Invalid type: {type}. Valid choices: 'done', 'todo', 'in-progress'")
         return
 
-    if type != None:
+    if type is not None:
         tasks = dict(filter(lambda item: item[1].get("status") == type, tasks.items()))
 
     for task_id, task in tasks.items():
-        print(f"Task #{task_id}: {task.get("desc")}")
-        print(f"Status: {task.get("status")}")
-        print(f"Created at: {task.get("createdAt")}")
-        print(f"Last updated at: {task.get("updatedAt")}")
+        print(f"Task #{task_id}: {task.get('desc')}")
+        print(f"Status: {task.get('status')}")
+        print(f"Created at: {format_time(task.get('createdAt'))}")
+        print(f"Last updated at: {format_time(task.get('updatedAt'))}")
         print()
 
-def main():
+# Display help message with available commands
+def show_help():
+    print("Available commands:")
+    print("  add \"task description\"")
+    print("  update <id> \"new description\"")
+    print("  delete <id>")
+    print("  mark-in-progress <id>")
+    print("  mark-done <id>")
+    print("  list [todo|in-progress|done]")
+    print("  help")
+    print("  exit")
 
+# Main REPL loop for the CLI application
+def main():
     while True:
-        
-        # Step 1: Read and tokenize input
         line = input("task-cli ")
         line = process_line(line)
+        if not line or len(line) == 0:
+            print("No command entered.")
+            continue
 
-        # if line[0] == "add":
-        #     pass
-        # elif line[0] == "update":
-        #     pass
-        # # ...
-        # else:
-        #     print("Invalid command, try again")
-
-        # Step 2: Interpret first token
         match line[0]:
             case "add":
                 add_task(line[1])
@@ -226,9 +197,13 @@ def main():
                     list_tasks(line[1])
                 else:
                     print("Invalid number of arguments for 'list' function.")
+            case "help":
+                show_help()
+            case "exit":
+                break
             case _:
                 print("Invalid command, try again")
 
-
+# Entry point
 if __name__ == "__main__":
     main()

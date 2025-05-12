@@ -37,7 +37,7 @@ All notebooks in the `notes/` directory are numbered and build sequentially. The
 
 ## 🧪 Projects
 
-The `projects/` directory includes real-world tasks and mini-apps based on [roadmap.sh/python projects](https://roadmap.sh/projects/task-tracker).
+The `projects/` directory includes real-world tasks and mini-apps based on [roadmap.sh/python projects](https://roadmap.sh/backend/projects/).
 
 ### ✅ Currently Active
 
