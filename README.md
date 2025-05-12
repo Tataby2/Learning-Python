@@ -60,8 +60,8 @@ $ python task-cli.py list
 
 - We're working on separate branches to reflect our personal tracks.
 - Feel free to compare implementations, raise issues, or suggest improvements!
-- Kalp's branch: `kalp`
-- KelpFriesOG’s branch: `main` or custom
+- Kelp's branch: `kelp_copy`
+- Tataby’s branch: `main`
 
 ---
 
